@@ -1,10 +1,10 @@
-//v1.1 implemented a basic AI
+//v1.2 implemented menu, medium and hard AI, fixed friction
 
 
 //call all global variables
 
 
-int nx = 5;             //number of columns, must not be divisible by number of rows, otherwise safe to change
+int nx = 10;             //number of columns, must not be divisible by number of rows, otherwise safe to change
 int ny = 3;             //number of rows, safe to change
 int level = 0;
 int i=0;
@@ -16,7 +16,7 @@ float x = 50;           //starting x-position, safe to change
 float x_initial = x;
 float y= 400;           //starting y-position, important to change if resolution is changed dramatically.
 float y_initial = y;
-float starting_speed = 6;    //starting speed, safe to change
+float starting_speed = 9;    //starting speed, safe to change
 float base_speed = starting_speed;
 float dx = 0;
 float dy = 0;
@@ -24,10 +24,10 @@ float diam =30;         //ball diameter, safe to change
 int input_mode = 2;      //0 for mouse, 1 for keyboard, 2 for AI
 float left_corner = 500;    //default paddle start location
 float paddle_speed = 0;
-float AI_speed = 0.5;
+float AI_speed = 0.8;
 float AI_delay = 40;
 float paddle_target =random(40,80);
-float AI_intelligence = 0;     //currently works from 0 to 2
+float AI_intelligence = 2;     //currently works from 0 to 1
 int[] boxes =  new int[nx*ny+1];
 int[] boxes_x = new int[nx*ny+1];
 int[] boxes_y = new int[nx*ny+1];
@@ -35,13 +35,16 @@ float[] x_corner = new float[nx*ny+1];
 float[] y_corner = new float[nx*ny+1];
 int number_of_boxes = 0;
 int target_block = nx*ny;
+int initialized = 0;
+int start_countdown = 40;//checks how far your are through the settings menu
 //int collided_y = 0; int collided_x = 0; //old workaround for multi-collisions
 //int zeroth_box_broken = 0;    //workaround for zeroth box bug, but doesn't seem to work.
 
 
 void setup() {
-  size(1440, 900);      //this game should be fairly resolution-independent
-  
+  //size(1920,1080);      //this game should be fairly resolution-independent
+fullScreen();
+ 
 //populate box matricies so that their positions and sizes can be drawn
   for (int i=0; i<nx*ny+1; i++) {
     boxes[i]=1;
@@ -52,28 +55,98 @@ void setup() {
 
 //click the mouse to start the ball at a new level or life, or reset game
 void mousePressed() {
-
+if (start_countdown <=0){
   if (x == x_initial&&y==y_initial&&balls>=1) {        //launch ball
-    dx=base_speed;
+    dx=base_speed*random(0.5,1.1);
     dy=base_speed;
-  }
+  }}
   if (balls==0){ score=0; balls = 3; level=0;                    //reset
   base_speed = starting_speed;
   for (int i=0; i<nx*ny+1;i++)boxes[i]=1;                         //the game
   left_corner = 500; paddle_speed = 0;
+  initialized = 0;
+  start_countdown = 40;
+  cursor();
+  
   //zeroth_box_broken=0;
   //if the number of boxes grows at each level, i need to reset them to their inital values and rebuild the arrays here too
   }
   
 }
 
+void keyPressed() {
+  if(keyCode == ENTER){
+if (start_countdown <=0){
+  if (x == x_initial&&y==y_initial&&balls>=1) {        //launch ball
+    dx=base_speed*random(0.5,1.1);
+    dy=base_speed;
+  }}
+  if (balls==0){ score=0; balls = 3; level=0;                    //reset
+  base_speed = starting_speed;
+  for (int i=0; i<nx*ny+1;i++)boxes[i]=1;                         //the game
+  left_corner = 500; paddle_speed = 0;
+  initialized = 0;
+  start_countdown = 50;
+  cursor();
+  
+  //zeroth_box_broken=0;
+  //if the number of boxes grows at each level, i need to reset them to their inital values and rebuild the arrays here too
+  }}
 
-//the draw loop, starting with background and HUD
+  
+}
+
 void draw() {
-  noCursor();
   background(200, 100, 0);
   number_of_boxes = 0;             //for bookkeeping and to be sure when the level is finished
-  textSize(32);
+  
+  
+  
+  
+  //settings menu
+  if (initialized <=1&&start_countdown>=41)start_countdown--;
+  if (initialized <=1&&start_countdown<=40){
+    textSize(64); fill(255); textAlign(CENTER, CENTER);
+    text("Select Mode:",width/2, height/8);
+    if (initialized == 0){rect(width/2-3*width/14-20, height/4, width/7, height/12);
+    rect(width/2-width/14, height/4, width/7, height/12);}
+    
+     if (initialized == 1){rect(width/2-3*width/14-20, height/4+height/12+20, width/7, height/12);
+    rect(width/2-width/14, height/4+height/12+20, width/7, height/12);
+  rect(width/2+width/14+20, height/4+height/12+20, width/7, height/12);}
+    rect(width/2+width/14+20, height/4, width/7, height/12);
+    fill(0); textSize(32);
+    
+    if(initialized == 0){text("Mouse", width/2-3*width/14-20+width/14, height/4+height/24);
+    text("Keyboard", width/2-width/15+width/14, height/4+height/24);}
+    
+    if(initialized == 1){text("Basic", width/2-3*width/14-20+width/14, height/4+height/12+20+height/24);
+    text("Smart", width/2-width/15+width/14, height/4+height/12+20+height/24);
+  text("Smarter", width/2+width/7+20, height/4+height/12+20+height/24);}
+    text ("AI Demo", width/2+width/7+20, height/4+height/24);
+    
+    if (mousePressed==true&&initialized ==0){
+    if (mouseX < width/2-width/14-20&&mouseY<height/4+height/12){input_mode=0; initialized =2;}
+    if (mouseX > width/2-width/14-20 && mouseX < width/2+width/14 && mouseY< height/4+height/12){input_mode =1; initialized = 2;}
+    if (mouseX > width/2+width/14+20 && mouseY < height/4+height/12){input_mode = 2; initialized = 1;}
+    }
+    if(mousePressed==true&&initialized==1){
+    if(mouseX < width/2-width/14-20&&mouseY>height/4+height/12+20){AI_intelligence = 0; initialized = 2;}
+    if (mouseX > width/2-width/14-20 && mouseX < width/2+width/14 && mouseY> height/4+height/12+20){AI_intelligence =1; initialized = 2;}
+    if (mouseX > width/2+width/14+20 && mouseY > height/4+height/12+20){AI_intelligence = 2; initialized = 2;}
+    }
+  
+  }
+  
+  
+  
+  
+  //start actual game
+  if (initialized ==2){
+    if(start_countdown>=1)start_countdown -=1;
+    noCursor();
+    textAlign(LEFT,BOTTOM);
+  textSize(32); fill(255);
   if (balls>=1) {
     text("Balls:", 157, 34);
     text(balls, 237, 34);
@@ -81,17 +154,21 @@ void draw() {
   text(level+1, 95, 34);
   } else {
     textSize(40);
-    text("Game Over", 0, 34);
+    textAlign(LEFT, TOP);
+    text("Game Over", 2, 2);
     textSize(32);
+    textAlign(LEFT,BOTTOM);
   }
   text("Score:", width-300, 34);
   text(score, width-200, 34);
-  if (x==x_initial&&y==y_initial){
-    if (balls==0)text("Click anywhere to reset game", 2, 74); 
-    else text("Click anywhere to launch ball", 2, 74);}
+  if (x==x_initial&&y==y_initial&&start_countdown<=0&&input_mode!=2){
+    if (balls==0)text("Click anywhere or press enter to reset game", 2, 74); 
+    else text("Click anywhere or press enter to launch ball", 2, 74);}
  
-  text("Speed:", width-210, height-100);
-  text (sqrt(dy*dy+dx*dx), width-110, height-100);
+ 
+  //display for speed
+  //text("Speed:", width-210, height-100);
+  //text (sqrt(dy*dy+dx*dx), width-110, height-100);
   
   
   
@@ -243,19 +320,21 @@ if(y_corner[i]<=y+diam/3 && y_corner[i]+box_height>=y - diam/3){
   if(input_mode==2){left_corner = 500;paddle_speed = 0;}}
   
   //collision with walls
-  if (x >= width -diam/2||x<= diam/2) dx = -dx;
-  if (y<= diam/2) dy = -dy;
+  if (x >= width -diam/2){dx=-abs(dx); if (dx <=-0.75*base_speed)dx += 0.01*base_speed;}
+if(x<= diam/2){ dx = abs(dx);if (dx >= 0.75*base_speed)dx -=0.01*base_speed;} 
+
+  if (y<= diam/2){ dy = abs(dy); if (dy >= 0.75*base_speed)dy -= 0.01*base_speed;}
 
 //keyboard controls
 if(input_mode ==1){
   if (keyPressed==true) { 
     if (key == CODED) {
-      if (keyCode == LEFT&& paddle_speed >=-14)paddle_speed -= 2;
+      if (keyCode == LEFT&& paddle_speed >=-AI_speed*27)paddle_speed -= AI_speed*3;
 
-      if (keyCode ==  RIGHT&& paddle_speed <=14)paddle_speed += 2;
+      if (keyCode ==  RIGHT&& paddle_speed <=AI_speed*27)paddle_speed += AI_speed*3;
     }
   }
-  if(keyPressed == false){if (paddle_speed <0) paddle_speed +=2; if (paddle_speed >0) paddle_speed -=2;}
+  if(keyPressed == false){if (paddle_speed <0) paddle_speed +=AI_speed*3; if (paddle_speed >0) paddle_speed -=AI_speed*3;}
 //if(left_corner>=0 && left_corner + 120 <= width)
 if (left_corner <= -60)paddle_speed = abs(paddle_speed);
 if (left_corner >= width-60)paddle_speed = -abs(paddle_speed);
@@ -266,23 +345,23 @@ left_corner += paddle_speed;}
 
 
 
-//easy AI
+//easy AI predicts ball's location, damps movement to reduce overshoot
 if (input_mode == 2 && AI_intelligence == 0){ 
 float x_target=x; float y_target = y;
 if (dx!=0){ boolean rebound = false;
 while (y_target+diam/2 <= height - 60&& y_target+diam/2>=0){                                                      //calculate where it will hit    
   y_target += dy;
-  if (dy>0){                                                                              //consider rebounds for a downward-moving ball
+  if (dy>0){                                                                              //consider rebounds
   if (rebound == false)x_target += dx;
   if (rebound == true) x_target -= dx;
   if (x_target <0){x_target -= 2*dx; rebound = true;}
   if (x_target > width){x_target -= 2*dx; rebound = true;}}
-    if (dy<0){x_target += dx;}                                                         //ignore rebounds for an upward-moving ball
+    if (dy<0){x_target += dx;}                                                         
   } rebound = false;
-  if (x_target > left_corner + paddle_target&& paddle_speed <20*AI_speed) paddle_speed += AI_speed;
-  if (x_target < left_corner+paddle_target - 20&&paddle_speed >-12) paddle_speed -=AI_speed;
-  if(x_target > left_corner +paddle_target - 20&& x_target < left_corner + paddle_target){
-  if(abs(paddle_speed)<= 3*AI_speed)paddle_speed=0;else{
+  if (x_target > left_corner + paddle_target&& paddle_speed <20*AI_speed) paddle_speed += AI_speed;          //accelerate towards
+  if (x_target < left_corner+paddle_target - 20&&paddle_speed >-20*AI_speed) paddle_speed -=AI_speed;       //the balls' predicted location, aiming for randomized part of paddle
+  if(x_target >= left_corner +paddle_target - 20&& x_target <= left_corner + paddle_target){
+  if(abs(paddle_speed)<= 3*AI_speed)paddle_speed=0;else{                                                  //if you're there, slow down, to reduce overshoot
   if (paddle_speed>0)paddle_speed -=3*AI_speed;if (paddle_speed<0)paddle_speed+=3*AI_speed;}}
 
     
@@ -297,7 +376,95 @@ left_corner += paddle_speed;
 }
 
 
+//medium AI predicts location of ball and paddle, tries to correct bad ball movement patterns
+if (input_mode == 2 && AI_intelligence == 1){ 
+float x_target=x; float y_target = y;int simulated_frames = 0;
+if (dx!=0){ boolean rebound = false; 
+while (y_target+diam/2 <= height - 60&& y_target+diam/2>=0){                                                      //calculate where it will hit    
+  y_target += dy; simulated_frames += 1;
+  if (dy>0){                                                                              //consider rebounds for a downward-moving ball
+  if (rebound == false)x_target += dx;
+  if (rebound == true) x_target -= dx;
+  if (x_target <0){x_target -= 2*dx; rebound = true;}
+  if (x_target > width){x_target -= 2*dx; rebound = true;}}
+    if (dy<0){x_target += dx;}                                                         //ignore rebounds for an upward-moving ball
+  } rebound = false;
+  if (abs(dx)<0.25*base_speed){if (dx>0)paddle_target = random(110,115);if(dx<0)paddle_target = random(20,25);}           //correct overly vertical movement
+  if(abs(dx)>=1.4*base_speed){if (dx<0)paddle_target = random(110,115);if(dx>0)paddle_target = random(20,25);}                    //correct overly horizontal movement
+  if (x_target > left_corner +paddle_speed*simulated_frames +paddle_target&& paddle_speed <20*AI_speed) paddle_speed += AI_speed;            //if you'll undershoot the target, speed up
+  if (x_target < left_corner+paddle_speed*simulated_frames+paddle_target - 20&&paddle_speed >-20*AI_speed) paddle_speed -=AI_speed;         //if you'll overshoot the target, slow down
 
+  
+  }
+
+if (left_corner <= -60)paddle_speed = AI_speed;                                //keep from going off the screen
+if (left_corner >= width-60)paddle_speed = -1*AI_speed;  
+left_corner += paddle_speed;
+
+
+}
+
+
+//hard AI predicts location of ball and paddle, is faster, tries to correct bad ball movement patterns, actively seeks out last few boxes
+if (input_mode == 2 && AI_intelligence == 2){ 
+float x_target=x; float y_target = y;int simulated_frames = 0;
+if (dx!=0){ boolean rebound = false; boolean rebound_L = false; boolean rebound_R = false;
+while (y_target+diam/2 <= height - 60&& y_target+diam/2>=0){                                                      //calculate where it will hit    
+  y_target += dy; simulated_frames += 1;
+  if (dy>0){                                                                              //consider rebounds for a downward-moving ball
+  if (rebound == false)x_target += dx;
+  if (rebound == true) x_target -= dx;
+  if (x_target <0){x_target -= 2*dx; rebound = true;}
+  if (x_target > width){x_target -= 2*dx; rebound = true;}}
+    if (dy<0){x_target += dx;}                                                         //ignore rebounds for an upward-moving ball
+  } rebound = false;
+  if(number_of_boxes >= 0.2*nx*ny+1){                                                //run medium AI protocol for many boxes left
+  if(abs(dx)/abs(dy)>4){if (dx<0)paddle_target = 120;if(dx>0)paddle_target = 20;}      //correct overly horizontal movement
+  else{if (abs(dx)<0.25*base_speed){if (dx>0)paddle_target = 115;if(dx<0)paddle_target = 20;}} //correct overly vertical movement
+  }
+  if(number_of_boxes<0.2*nx*ny+1&&number_of_boxes>=2){                                   //target a specific box if few are left
+
+    float x_target_block = x_target;                                        //track a new x-coordinate without changing the old one
+float nearest_block = width;
+
+for (i = 1; i < nx*ny+1;i++){
+  if (boxes[i]==1)if (abs(x - x_corner[i])<nearest_block){target_block = i; nearest_block = abs(x - x_corner[i]);
+}}
+
+  while (y_target - diam/2 >= y_corner[target_block]+box_height){          //run a second simulation of after the ball hits the paddle
+  y_target -= abs(dy);                                            //move up by magnitude of y-speed, so we can ignore y-direction
+  if (rebound == false)x_target_block += dx;
+  if (rebound == true) x_target_block -= dx;
+  if (x_target_block <0){x_target_block -= 2*dx; rebound_L = true;}
+  if (x_target_block > width){x_target_block -= 2*dx; rebound_R = true;}}
+
+
+  if (abs(dx)<0.25*base_speed){if (dx>0)paddle_target = random(110,115);if(dx<0)paddle_target = random(20,25);}           //correct overly vertical movement
+  if(abs(dx)>=1.4*base_speed){if (dx<0)paddle_target = random(110,115);if(dx>0)paddle_target = random(20,25);}                    //correct overly horizontal movement
+
+  
+if (x_target_block + diam/3  < x_corner[target_block]){                           //if ball will miss to the left at current rate  
+paddle_target = random(115,120);}
+//if (rebound_L == false)paddle_target = random(110,120); if (rebound_L == true)paddle_target = random(20,30);}
+if (x_target_block - diam/3 > x_corner[target_block]+box_width){                  //if ball will miss to the right at current rate
+paddle_target = random(20,25);}
+//if (rebound_R == false)paddle_target = random(20,30); if (rebound_R == true)paddle_target = random(110,120);}
+if(x_target_block - diam/3 <= x_corner[target_block]+box_width && x_target + diam/3 >= x_corner[target_block])paddle_target = random(40,100);      //if block will hit, don't mess with it
+
+
+}
+  if (x_target  > left_corner +paddle_speed*simulated_frames +paddle_target&& paddle_speed <25*AI_speed) paddle_speed += AI_speed;         //if you'll be left of the ball, accelerate right
+  if (x_target  < left_corner+paddle_speed*simulated_frames+paddle_target - 20&&paddle_speed >-25*AI_speed) paddle_speed -=AI_speed;      //if you'll be right of the ball, accelerate left
+
+  
+  }
+
+if (left_corner <= -60)paddle_speed = AI_speed;                                //keep from going off the screen
+if (left_corner >= width-60)paddle_speed = -1*AI_speed;  
+left_corner += paddle_speed;
+
+
+}
 
 
 
@@ -313,40 +480,41 @@ left_corner += paddle_speed;
  
   //collisions with paddle
   if (dy>0 && y > height/2){                                                   //only check for paddle collisions in the bottom half of the screen
-    if (y + diam/2 + dy >= height-60 && y <= height-60){                                  //check ball's y-coordinate
+    if (y + diam/2 + dy >= height-60 && y <= height-45+dy){                                  //check ball's y-coordinate
   
-      if (x + dy + diam/2 >= left_corner && x + dy -diam/2 <= right_corner){            //check ball's x-coordinate
+      if (x + dx + diam/2 >= left_corner && x + dx -diam/2 <= right_corner){            //check ball's x-coordinate
           dy_final = -abs(dy);
           dy = dy_final;
-          paddle_target =random(40,80);
+          paddle_target =random(35,105);
+          target_block = nx*ny;
           combo = 0;
           
-          if (abs(dx)<=base_speed*1.5){
-            if (right_corner - x >= 100){                                            //bounce off of corners in the opposite direction
+          if (dx>=base_speed*-1.5){
+            if (right_corner - x >= 90){                                            //bounce off of corners in the opposite direction
               dx -= (right_corner - x - 60)*base_speed/100;                         //and slightly accelerate upwards
               if (abs(dy)<=base_speed*1.5)dy -= base_speed/20;}
-            
-            if(x - left_corner >= 100){
+          }
+          if (dx<=base_speed*1.5){
+            if(x - left_corner >= 90){
               dx += (x - left_corner - 60)*base_speed/100;
               if (abs(dy)<=base_speed*1.5)dy -= base_speed/20;} 
-          }
-          if(abs(dy)>=2/3*base_speed && abs(dx) >= base_speed/2){
-            if(x - left_corner >= 45 && x - left_corner <= 90){      //slightly decelerate if the center of the paddle is hit
-              dy += base_speed/5;}}
-}}}
+          }}
+
+}}
 
   
   
 //move on to next level
 if (number_of_boxes <= 1){            //if (number_of_boxes <= 0&&zeroth_box_broken==1){
 textSize(64);
-if(input_mode !=2)text("Click to go on to level", width/16, height/2);
-text(level+2, width/16+685, height/2); dx=0;dy=0; AI_delay = 50; paddle_speed = 0;
+if(input_mode !=2)text("Click or press enter to go on to nextlevel", width/16, height/2);
+//text(level+2, width/16+745, height/2); 
+dx=0;dy=0; AI_delay = 50; paddle_speed = 0;
 
-if (mousePressed == true){
+if (mousePressed == true||keyPressed == true){
 level +=1;
 if (level % 3 == 0) balls +=1;
-  base_speed += 0.5;
+  base_speed += 0.5; AI_speed += 0.1;
 
 //I'd love to be able to implement an increase in boxes as level increases.
 //nx += 1;
@@ -361,7 +529,16 @@ left_corner = 500; paddle_speed = 0;
 x = x_initial; y = y_initial;}
 
 
-
+  if (keyPressed == true&&keyCode == ENTER){level +=1;
+if (level % 3 == 0) balls +=1;
+  base_speed += 0.5; AI_speed += 0.1;
+number_of_boxes = 2;
+left_corner = 500; paddle_speed = 0;
+//zeroth_box_broken=0;
+ for (int i=0; i<nx*ny+1; i++) {
+    boxes[i]=1;}
+x = x_initial; y = y_initial;
+start_countdown = 40;}
 
 
 
@@ -370,7 +547,7 @@ if (input_mode == 2){
 level +=1;
 AI_delay -=1;
 if (level % 3 == 0) balls +=1;
-  base_speed += 0.5;
+  base_speed += 0.7;
   AI_speed += 0.1;
   left_corner = 500;
   
@@ -400,7 +577,7 @@ x = x_initial; y = y_initial;}
 
   }
 
-
-
+//end post-initialization protocol
+}
 //end draw, move on to next frame
 }
