@@ -18,6 +18,9 @@ float base_speed = starting_speed;
 float dx = 0;
 float dy = 0;
 float diam =30;         //ball diameter, safe to change
+int input_mode = 0;      //0 for mouse, 1 for keyboard
+float left_corner = 500;    //default paddle start location
+float paddle_speed = 0;
 int[] boxes =  new int[nx*ny+1];
 int[] boxes_x = new int[nx*ny+1];
 int[] boxes_y = new int[nx*ny+1];
@@ -29,7 +32,7 @@ int number_of_boxes = 0;
 
 
 void setup() {
-  size(1024, 768);      //this game should be fairly resolution-independent
+  size(1440, 900);      //this game should be fairly resolution-independent
   
 //populate box matricies so that their positions and sizes can be drawn
   for (int i=0; i<nx*ny+1; i++) {
@@ -49,6 +52,7 @@ void mousePressed() {
   if (balls==0){ score=0; balls = 3; level=0;                    //reset
   base_speed = starting_speed;
   for (int i=0; i<nx*ny+1;i++)boxes[i]=1;                         //the game
+  left_corner = 500;
   //zeroth_box_broken=0;
   //if the number of boxes grows at each level, i need to reset them to their inital values and rebuild the arrays here too
   }
@@ -214,8 +218,8 @@ if(y_corner[i]<=y+diam/3 && y_corner[i]+box_height>=y - diam/3){
 
 
 
- //draw paddle and ball 
-  rect(mouseX -60, height-60, 120, 30);
+ //drawball 
+
   ellipse(x, y, diam, diam);
   x += dx;
   y += dy;
@@ -233,10 +237,58 @@ if(y_corner[i]<=y+diam/3 && y_corner[i]+box_height>=y - diam/3){
   if (x >= width -diam/2||x<= diam/2) dx = -dx;
   if (y<= diam/2) dy = -dy;
 
-                                                                                                                                              //FIX THIS TO BE PREDICTIVE FOR LEVELS 30+
-  //collision with paddle
+
+  if (keyPressed==true) { 
+    if (key == CODED) {
+      if (keyCode == LEFT&& paddle_speed >=-14)paddle_speed -= 2F;
+
+      if (keyCode ==  RIGHT&& paddle_speed <=14)paddle_speed += 2;
+    }
+  }
+  if(keyPressed == false){if (paddle_speed <0) paddle_speed +=2; if (paddle_speed >0) paddle_speed -=2;}
+//if(left_corner>=0 && left_corner + 120 <= width)
+if (left_corner <= -60)paddle_speed = abs(paddle_speed);
+if (left_corner >= width-60)paddle_speed = -abs(paddle_speed);
+left_corner += paddle_speed;
+
+
+
+
+  //draw paddle
+  if (input_mode == 0)left_corner = mouseX-60;        //mouse mode
+  float right_corner = left_corner + 120;            //keyboard mode
+          
+  rect(left_corner, height-60, 120, 30);
+
+  
+ 
+  //collisions with paddle
+  if (dy>0 && y > height/2){                                                   //only check for paddle collisions in the bottom half of the screen
+    if (y + diam/2 + dy >= height-60 && y <= height-60){                                  //check ball's y-coordinate
+  
+      if (x + dy + diam/2 >= left_corner && x + dy -diam/2 <= right_corner){            //check ball's x-coordinate
+          dy_final = -abs(dy);
+          dy = dy_final;
+          combo = 0;
+          
+          if (abs(dx)<=base_speed*1.5){
+            if (right_corner - x >= 100){                                            //bounce off of corners in the opposite direction
+              dx -= (right_corner - x - 60)*base_speed/100;                         //and slightly accelerate upwards
+              if (abs(dy)<=base_speed*1.5)dy -= base_speed/20;}
+            
+            if(x - left_corner >= 100){
+              dx += (x - left_corner - 60)*base_speed/100;
+              if (abs(dy)<=base_speed*1.5)dy -= base_speed/20;} 
+          }
+          if(abs(dy)>=2/3*base_speed && abs(dx) >= base_speed/2){
+            if(x - left_corner >= 45 && x - left_corner <= 90){      //slightly decelerate if the center of the paddle is hit
+              dy += base_speed/5;}}
+}}}
+  
+  
+  /*        //old collisions mode
   float distanceX = x-mouseX;
-  if (y+diam/2+dy>=height-60&& abs(distanceX)<=60+diam/2) {   //check if the ball hit the paddle
+  if (y+diam/2+dy>=height-60 && abs(distanceX)<=60+diam/2 && y<=height-60) {   //check if the ball hit the paddle
     float dy_up = abs(dy);                                                          //reverse direction
     dy = -dy_up;                                                                   //hopefully without clipping
     combo = 0;
@@ -254,8 +306,13 @@ if(y_corner[i]<=y+diam/3 && y_corner[i]+box_height>=y - diam/3){
   }
   
   
+  */
+
+
   
- 
+  
+  
+
   
   
   
@@ -279,6 +336,7 @@ if (level % 3 == 0) balls +=1;
 
 //reset level
 number_of_boxes = 2;
+left_corner = 500;
 //zeroth_box_broken=0;
  for (int i=0; i<nx*ny+1; i++) {
     boxes[i]=1;}
