@@ -1,7 +1,10 @@
+//v1.1 implemented a basic AI
+
+
 //call all global variables
 
 
-int nx = 10;             //number of columns, must not be divisible by number of rows, otherwise safe to change
+int nx = 5;             //number of columns, must not be divisible by number of rows, otherwise safe to change
 int ny = 3;             //number of rows, safe to change
 int level = 0;
 int i=0;
@@ -18,15 +21,20 @@ float base_speed = starting_speed;
 float dx = 0;
 float dy = 0;
 float diam =30;         //ball diameter, safe to change
-int input_mode = 0;      //0 for mouse, 1 for keyboard
+int input_mode = 2;      //0 for mouse, 1 for keyboard, 2 for AI
 float left_corner = 500;    //default paddle start location
 float paddle_speed = 0;
+float AI_speed = 0.5;
+float AI_delay = 40;
+float paddle_target =random(40,80);
+float AI_intelligence = 0;     //currently works from 0 to 2
 int[] boxes =  new int[nx*ny+1];
 int[] boxes_x = new int[nx*ny+1];
 int[] boxes_y = new int[nx*ny+1];
 float[] x_corner = new float[nx*ny+1];
 float[] y_corner = new float[nx*ny+1];
 int number_of_boxes = 0;
+int target_block = nx*ny;
 //int collided_y = 0; int collided_x = 0; //old workaround for multi-collisions
 //int zeroth_box_broken = 0;    //workaround for zeroth box bug, but doesn't seem to work.
 
@@ -52,7 +60,7 @@ void mousePressed() {
   if (balls==0){ score=0; balls = 3; level=0;                    //reset
   base_speed = starting_speed;
   for (int i=0; i<nx*ny+1;i++)boxes[i]=1;                         //the game
-  left_corner = 500;
+  left_corner = 500; paddle_speed = 0;
   //zeroth_box_broken=0;
   //if the number of boxes grows at each level, i need to reset them to their inital values and rebuild the arrays here too
   }
@@ -139,7 +147,7 @@ dy_final = abs(dy);              //queue change of direction, to be executed aft
 if (i==0);else{                      //this line used to set zeroth_box_broken to zero
 boxes[i]=0;}                          //delete the box that was hit
 score += 100*(combo+1)*(level+1);    //get points. increases with level and combo (blocks hit in a row)
-combo += 1;
+combo += 1; target_block = nx*ny;
 
 }}}}}
 //}
@@ -159,7 +167,7 @@ dy_final = -abs(dy);
 if (i==0);else{
   boxes[i]=0;}
 score += 100*(combo+1)*(level+1);
-combo += 1;
+combo += 1; target_block = nx*ny;
 
   }}}}}
 //}
@@ -182,7 +190,7 @@ if(y_corner[i]<=y+diam/3 && y_corner[i]+box_height>=y - diam/3){
   if (i==0);else{
     boxes[i]=0;}
   score += 100*(combo+1)*(level+1);
-  combo +=1;
+  combo +=1; target_block = nx*ny;
 
 }}}}}
 //}
@@ -202,7 +210,7 @@ if(y_corner[i]<=y+diam/3 && y_corner[i]+box_height>=y - diam/3){
   if (i==0);else{
     boxes[i]=0;}
   score += 100*(combo+1)*(level+1);
-  combo +=1;
+  combo +=1; target_block = nx*ny;
 }}}}}
 //}
 
@@ -218,7 +226,7 @@ if(y_corner[i]<=y+diam/3 && y_corner[i]+box_height>=y - diam/3){
 
 
 
- //drawball 
+ //draw ball 
 
   ellipse(x, y, diam, diam);
   x += dx;
@@ -231,16 +239,18 @@ if(y_corner[i]<=y+diam/3 && y_corner[i]+box_height>=y - diam/3){
     x= x_initial;
     dx=0;
     dy=0;
-    if(can_lose_lives==1)balls -=1; }
+    if(can_lose_lives==1)balls -=1; AI_delay = 40; 
+  if(input_mode==2){left_corner = 500;paddle_speed = 0;}}
   
   //collision with walls
   if (x >= width -diam/2||x<= diam/2) dx = -dx;
   if (y<= diam/2) dy = -dy;
 
-
+//keyboard controls
+if(input_mode ==1){
   if (keyPressed==true) { 
     if (key == CODED) {
-      if (keyCode == LEFT&& paddle_speed >=-14)paddle_speed -= 2F;
+      if (keyCode == LEFT&& paddle_speed >=-14)paddle_speed -= 2;
 
       if (keyCode ==  RIGHT&& paddle_speed <=14)paddle_speed += 2;
     }
@@ -249,7 +259,46 @@ if(y_corner[i]<=y+diam/3 && y_corner[i]+box_height>=y - diam/3){
 //if(left_corner>=0 && left_corner + 120 <= width)
 if (left_corner <= -60)paddle_speed = abs(paddle_speed);
 if (left_corner >= width-60)paddle_speed = -abs(paddle_speed);
+left_corner += paddle_speed;}
+
+
+
+
+
+
+//easy AI
+if (input_mode == 2 && AI_intelligence == 0){ 
+float x_target=x; float y_target = y;
+if (dx!=0){ boolean rebound = false;
+while (y_target+diam/2 <= height - 60&& y_target+diam/2>=0){                                                      //calculate where it will hit    
+  y_target += dy;
+  if (dy>0){                                                                              //consider rebounds for a downward-moving ball
+  if (rebound == false)x_target += dx;
+  if (rebound == true) x_target -= dx;
+  if (x_target <0){x_target -= 2*dx; rebound = true;}
+  if (x_target > width){x_target -= 2*dx; rebound = true;}}
+    if (dy<0){x_target += dx;}                                                         //ignore rebounds for an upward-moving ball
+  } rebound = false;
+  if (x_target > left_corner + paddle_target&& paddle_speed <20*AI_speed) paddle_speed += AI_speed;
+  if (x_target < left_corner+paddle_target - 20&&paddle_speed >-12) paddle_speed -=AI_speed;
+  if(x_target > left_corner +paddle_target - 20&& x_target < left_corner + paddle_target){
+  if(abs(paddle_speed)<= 3*AI_speed)paddle_speed=0;else{
+  if (paddle_speed>0)paddle_speed -=3*AI_speed;if (paddle_speed<0)paddle_speed+=3*AI_speed;}}
+
+    
+ 
+  }
+
+if (left_corner <= -60)paddle_speed = AI_speed;                                //keep from going off the screen
+if (left_corner >= width-60)paddle_speed = -1*AI_speed;  
 left_corner += paddle_speed;
+
+
+}
+
+
+
+
 
 
 
@@ -269,6 +318,7 @@ left_corner += paddle_speed;
       if (x + dy + diam/2 >= left_corner && x + dy -diam/2 <= right_corner){            //check ball's x-coordinate
           dy_final = -abs(dy);
           dy = dy_final;
+          paddle_target =random(40,80);
           combo = 0;
           
           if (abs(dx)<=base_speed*1.5){
@@ -284,44 +334,14 @@ left_corner += paddle_speed;
             if(x - left_corner >= 45 && x - left_corner <= 90){      //slightly decelerate if the center of the paddle is hit
               dy += base_speed/5;}}
 }}}
-  
-  
-  /*        //old collisions mode
-  float distanceX = x-mouseX;
-  if (y+diam/2+dy>=height-60 && abs(distanceX)<=60+diam/2 && y<=height-60) {   //check if the ball hit the paddle
-    float dy_up = abs(dy);                                                          //reverse direction
-    dy = -dy_up;                                                                   //hopefully without clipping
-    combo = 0;
-    if (abs(distanceX)<=15&&abs(dx)>=0.5*base_speed){                          //if it hits the middle of the paddle, slow down
-    if (dx<0) dx += base_speed/5;                                              
-    if (dx>0) dx -= base_speed/5;
-    
-    }
-    if (abs(distanceX)>=40) {                                                   //if it hits the edge, accelerate in that direction
-      combo = 0;
-      if (abs(dx)<=base_speed*1.5) dx += distanceX*base_speed/100; 
-      if (abs(dx)>= base_speed&&dy <= base_speed*1.5) dy -= base_speed/20;    //and sligtly increase y-speed as well
-      else{ if (dy >= 3*base_speed/4) dy += base_speed/50;}                                              //unless it's already at its maximum allowed value for the level
-    }
-  }
-  
-  
-  */
 
-
-  
-  
-  
-
-  
-  
   
   
 //move on to next level
 if (number_of_boxes <= 1){            //if (number_of_boxes <= 0&&zeroth_box_broken==1){
 textSize(64);
-text("Click to go on to level", width/16, height/2);
-text(level+2, width/16+685, height/2); dx=0;dy=0;
+if(input_mode !=2)text("Click to go on to level", width/16, height/2);
+text(level+2, width/16+685, height/2); dx=0;dy=0; AI_delay = 50; paddle_speed = 0;
 
 if (mousePressed == true){
 level +=1;
@@ -333,8 +353,35 @@ if (level % 3 == 0) balls +=1;
 //if (level % 4 == 0) ny +=1;
 //if (nx <= 3*ny) nx+=1;
 
+number_of_boxes = 2;
+left_corner = 500; paddle_speed = 0;
+//zeroth_box_broken=0;
+ for (int i=0; i<nx*ny+1; i++) {
+    boxes[i]=1;}
+x = x_initial; y = y_initial;}
 
-//reset level
+
+
+
+
+
+//next level in AI mode
+if (input_mode == 2){
+level +=1;
+AI_delay -=1;
+if (level % 3 == 0) balls +=1;
+  base_speed += 0.5;
+  AI_speed += 0.1;
+  left_corner = 500;
+  
+  
+
+
+//I'd love to be able to implement an increase in boxes as level increases.
+//nx += 1;
+//if (level % 4 == 0) ny +=1;
+//if (nx <= 3*ny) nx+=1;
+
 number_of_boxes = 2;
 left_corner = 500;
 //zeroth_box_broken=0;
@@ -343,6 +390,15 @@ left_corner = 500;
 x = x_initial; y = y_initial;}
 }
 
+//AI auto-launching ball
+  if(input_mode ==2){if (x == x_initial&&y==y_initial&&balls>=1) {        //launch ball
+      AI_delay -=1;
+     if(AI_delay == 0){
+     dx=base_speed;
+    dy=base_speed;}
+  }
+
+  }
 
 
 
