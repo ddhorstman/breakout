@@ -1,5 +1,5 @@
 # Breakout
-A clone of the 70's classic *Breakout* built over one weeks as my very first programming project. Built in Processing.
+A clone of the 70's classic *Breakout* built over one week as my very first programming project. Built in Processing.
 Features include:
 - Intelligent hit detection that safely handles multiple simultaneous collisions
 - Scaling difficulty across an infinite number of levels
